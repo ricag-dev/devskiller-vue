@@ -52,7 +52,15 @@ export default {
        * in contact.email array is invalid
        * and true otherwise
        */
-      return ''
+      let validate = true
+      this.contact.email.forEach(email => {
+        const valida1 = email.indexOf('@')
+        if (valida1 > 0 && email.indexOf('.') > valida1) {
+          validate = false
+        }
+      })
+
+      return validate
     },
     validatedPhone: function () {
       /**
@@ -60,7 +68,10 @@ export default {
        * in contact.phoneNumber array is
        * invalid and true otherwise
        */
-      return ''
+      const phone = this.contact.phoneNumber.join('').trim()
+      if (!phone.length) { return false }
+
+      return !isNaN(phone)
     }
   },
   methods: {
@@ -68,6 +79,7 @@ export default {
       if (this.contact.firstname && this.contact.lastname) {
         if (this.validatedEmail || this.validatedPhone) {
           ContactBus.$emit('addCon', this.contact)
+          ContactBus.$emit('close', true)
         } else {
           ContactBus.$emit('noAddCon', [])
         }
@@ -83,18 +95,21 @@ export default {
     },
     removeContact: function () {
       ContactBus.$emit('delCon', this.index)
+      ContactBus.$emit('close', true)
     },
     addEmail: function () {
       /**
        * Appends empty string to the end of
        * contact.email array
        */
+      this.contact.email.push('')
     },
     addPhone: function () {
       /**
        * Appends empty string to the end of
        * contact.phoneNumber array
        */
+      this.contact.phoneNumber.push('')
     }
   }
 }

@@ -57,3 +57,4 @@ nbproject/private/
 .ionide
 .npm-debug.log
 tmp
+package-lock.json

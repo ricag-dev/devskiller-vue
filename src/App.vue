@@ -3,20 +3,20 @@
     Add the directive called contactBubble to
     this element
   -->
-  <div id="app">
+  <div id="app" v-contact-bubble>
     <div class="section">
       <button id="btnAddContact" @click.prevent="openNew">Add Contact</button>
     </div>
     <div class="section">
       <!-- Two way bind query to this input field -->
-      <input id="search" placeholder="search" type="text">
+      <input id="search" placeholder="search" type="text" v-model="query">
     </div>
     <app-contactform v-bind="formSettings" v-bind:contact="contact"></app-contactform>
     <!--
       Edit app-contacts component to receive
       contacts property through search results
     -->
-    <app-contacts></app-contacts>
+    <app-contacts :contacts="search"></app-contacts>
   </div>
 </template>
 
@@ -24,6 +24,7 @@
 import Contacts from './components/Contacts'
 import ContactForm from './components/ContactForm'
 import { ContactBus } from './bus/ContactBus'
+import data from './assets/contacts.json'
 
 export default {
   name: 'App',
@@ -36,19 +37,23 @@ export default {
      * Create the necessary data variables here
      */
     return {
-      contacts: '',
+      contacts: this.sortContacts(),
       contact: {
         firstname: '',
         lastname: '',
         email: [''],
         phoneNumber: ['']
       },
+      query: '',
       formSettings: {
         /**
          * Create members boolean variables visible and newCon
          * with default values false. Create member variable
          * index with default value ''
          */
+        index: '',
+        newCon: false,
+        visible: false
       }
     }
   },
@@ -61,7 +66,21 @@ export default {
        * and return an array with the results
        */
       get: function () {
-        return ''
+        return this.contacts.filter((contact) => {
+          const params = [
+            contact.firstname.toLowerCase(),
+            contact.lastname.toLowerCase(),
+            contact.email.join(' ').toLowerCase(),
+            contact.phoneNumber.join(' ').toLowerCase()
+          ].join(' ')
+          const finalQuery = this.query.trim().toLowerCase()
+
+          if (!finalQuery) {
+            return true
+          } else {
+            return params.indexOf(finalQuery) > -1
+          }
+        })
       }
     }
   },
@@ -75,6 +94,13 @@ export default {
        * color: white;
        * font-variant: all-petite-caps;
        */
+      bind (el) {
+        el.style.background = 'rgb(159, 159, 199)'
+        el.style.borderRadius = '20px'
+        el.style.color = 'white'
+        el.style.fontSize = '20px'
+        el.style.fontVariant = 'all-petite-caps'
+      }
     }
   },
   methods: {
@@ -83,15 +109,32 @@ export default {
        * Complete this function to return contacts
        * sorted by lastname in ascending order
        */
-      return ''
+      return data.sort((a, b) => {
+        const nameA = a.lastname.toLowerCase()
+        const nameB = b.lastname.toLowerCase()
+        if (nameA < nameB) return -1
+        if (nameA > nameB) return 1
+        return 0
+      })
     },
     openNew: function () {
       /**
        * This function should be used to show new contact
        * form on screen.
        */
+      this.contact = {
+        id: this.contacts.length,
+        firstname: '',
+        lastname: '',
+        email: [''],
+        phoneNumber: ['']
+      }
+
+      this.formSettings.newCon = true
+      this.formSettings.visible = true
     },
     close: function (data) {
+      this.formSettings.index = null
       this.formSettings.visible = !data
     }
   },
@@ -110,6 +153,7 @@ export default {
        * be appended to contacts if formSettings.newCon
        * is true and reset formSettings to default values
        */
+      this.contacts.push(data)
     })
 
     ContactBus.$on('noAddCon', (data) => {
@@ -121,6 +165,9 @@ export default {
     })
 
     ContactBus.$on('delCon', (index) => {
+      if (!isNaN(parseInt(index))) {
+        this.contacts.splice(index, 1)
+      }
       /**
        * This method should remove index from contacts
        * and set formSettings to their default values
@@ -133,6 +180,8 @@ export default {
        * with the index of the contact to be
        * displayed.
        */
+      this.contact = { ...this.contacts[contactIndex] }
+      this.formSettings.index = contactIndex
       this.formSettings.newCon = false
       this.formSettings.visible = true
     })
